@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 ETHERSCAN_API_KEY = os.environ["POLYGONSCAN_API_KEY"]
-BREVO_SMTP_KEY    = os.environ["BREVO_SMTP_KEY"]
+SMTP_PASSWORD     = os.environ["BREVO_SMTP_KEY"]
 EMAIL_FROM        = os.environ["EMAIL_FROM"]
 EMAIL_TO          = os.environ["EMAIL_TO"]
 
@@ -42,7 +42,7 @@ def get_reental_tokens(wallet_address):
     for tx in data["result"]:
         contract = tx["contractAddress"].lower()
         decimals = int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18
-        value    = int(tx["value"]) / (10 ** decimals)
+        value = int(tx["value"]) / (10 ** decimals)
 
         if contract not in balances:
             balances[contract] = {
@@ -94,7 +94,7 @@ def build_email_html(report):
             "<div style='margin-bottom:32px;'>"
             "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>"
             f"<span style='font-size:15px;font-weight:600;color:#1a1a2e;'>{wallet_name}</span>"
-            f"<a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>Ver en Polygonscan →</a>"
+            f"<a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>Ver en Polygonscan</a>"
             "</div>"
             f"<div style='font-size:11px;color:#999;margin-bottom:12px;font-family:monospace;'>{wallet_addr}</div>"
             "<table width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;font-size:13px;'>"
@@ -121,7 +121,7 @@ def build_email_html(report):
         "</div>"
         f"<div style='padding:28px 32px;'>{secciones_html}</div>"
         "<div style='padding:20px 32px;border-top:1px solid #f0f0f0;background:#fafafa;'>"
-        "<p style='margin:0;font-size:11px;color:#aaa;'>Reporte automático diario 08:00h (hora España) · Red Polygon PoS</p>"
+        "<p style='margin:0;font-size:11px;color:#aaa;'>Reporte automatico diario 08:00h (hora Espana) · Red Polygon PoS</p>"
         "</div></div></body></html>"
     )
 
@@ -152,9 +152,9 @@ def send_email(subject, html_content, text_content):
     msg.attach(MIMEText(text_content, "plain"))
     msg.attach(MIMEText(html_content, "html"))
 
-with smtplib.SMTP("smtp.gmail.com", 587) as server:
-    server.starttls()
-        server.login(EMAIL_FROM, BREVO_SMTP_KEY)
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_FROM, SMTP_PASSWORD)
         server.sendmail(EMAIL_FROM, recipients, msg.as_string())
 
     print("  Email enviado correctamente.")
@@ -167,7 +167,7 @@ def main():
     report = {"fecha": fecha, "wallets": {}, "addresses": {}}
 
     for wallet_name, wallet_address in WALLETS.items():
-        print(f"  → Consultando {wallet_name} ({wallet_address[:10]}...)")
+        print(f"  -> Consultando {wallet_name} ({wallet_address[:10]}...)")
         tokens = get_reental_tokens(wallet_address)
         report["wallets"][wallet_name] = tokens
         report["addresses"][wallet_name] = wallet_address
