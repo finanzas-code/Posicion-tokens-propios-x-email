@@ -66,7 +66,8 @@ def get_reental_tokens(wallet_address):
     for t in reental_tokens:
         print(f"    · {t['token_name']} ({t['token_symbol']}) — {t['balance']:.4f}")
 
-return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
+        return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
+
 
 def build_email_html(report):
     fecha = report["fecha"]
