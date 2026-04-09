@@ -2,12 +2,7 @@ name: Reental Token Monitor
 
 on:
   schedule:
-    # 08:00 hora España (CET = UTC+1, CEST = UTC+2)
-    # Usamos 06:00 UTC para cubrir horario de verano (CEST)
-    # En invierno llegará a las 07:00h — ajusta a 07:00 UTC si prefieres invierno exacto
     - cron: "0 6 * * *"
-
-  # Permite ejecutar manualmente desde GitHub → Actions → Run workflow
   workflow_dispatch:
 
 jobs:
@@ -25,14 +20,13 @@ jobs:
           python-version: "3.12"
 
       - name: Instalar dependencias
-        run: pip install requests sendgrid
+        run: pip install requests
 
       - name: Ejecutar monitor
         env:
           POLYGONSCAN_API_KEY: ${{ secrets.POLYGONSCAN_API_KEY }}
-          SENDGRID_API_KEY:    ${{ secrets.SENDGRID_API_KEY }}
+          BREVO_SMTP_KEY:      ${{ secrets.BREVO_SMTP_KEY }}
           EMAIL_FROM:          ${{ secrets.EMAIL_FROM }}
           EMAIL_TO:            ${{ secrets.EMAIL_TO }}
           WALLET_ADDRESS_1:    ${{ secrets.WALLET_ADDRESS_1 }}
-          # WALLET_ADDRESS_2:  ${{ secrets.WALLET_ADDRESS_2 }}
         run: python src/monitor.py
