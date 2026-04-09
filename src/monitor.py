@@ -26,7 +26,7 @@ WALLETS = {
 # Dirección del contrato emisor de Reental (filtramos solo sus tokens)
 REENTAL_ISSUER = "0x6D7B3113A1Af7f6f91dC7fB1a6Eda97c31FBf48"  # actualiza si cambia
 
-POLYGONSCAN_BASE = "https://api.polygonscan.com/api"
+POLYGONSCAN_BASE = "https://api.etherscan.io/v2/api?chainid=137"
 
 # ─── Lógica de consulta ───────────────────────────────────────────────────────
 
