@@ -152,8 +152,8 @@ def send_email(subject, html_content, text_content):
     msg.attach(MIMEText(text_content, "plain"))
     msg.attach(MIMEText(html_content, "html"))
 
-    with smtplib.SMTP("smtp-relay.brevo.com", 587) as server:
-        server.starttls()
+with smtplib.SMTP("smtp.gmail.com", 587) as server:
+    server.starttls()
         server.login(EMAIL_FROM, BREVO_SMTP_KEY)
         server.sendmail(EMAIL_FROM, recipients, msg.as_string())
 
