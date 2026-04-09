@@ -82,13 +82,10 @@ def get_reental_tokens(wallet_address: str) -> list[dict]:
     # Filtramos tokens con balance positivo
     # y que contengan "RRT" o "Reental" en el nombre (ajusta según naming de Reental)
     reental_tokens = [
-        t for t in balances.values()
-        if t["balance"] > 0 and (
-            "RRT" in t["token_symbol"].upper() or
-            "REENTAL" in t["token_name"].upper() or
-            "REAL" in t["token_symbol"].upper()
-        )
-    ]
+    t for t in balances.values()
+    if t["balance"] > 0 and
+    t["token_name"].upper().startswith("REENTAL-")
+]
 
     return sorted(reental_tokens, key=lambda x: x["token_name"])
 
