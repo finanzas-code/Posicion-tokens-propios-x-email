@@ -4,64 +4,53 @@ Consulta tokens ERC-20 de Reental en Polygon y envía reporte diario por email.
 """
 
 import os
-import json
+import smtplib
 import requests
 from datetime import datetime, timezone
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # ─── Configuración ────────────────────────────────────────────────────────────
 
-POLYGONSCAN_API_KEY = os.environ["POLYGONSCAN_API_KEY"]
-SENDGRID_API_KEY    = os.environ["SENDGRID_API_KEY"]
-EMAIL_FROM          = os.environ["EMAIL_FROM"]       # ej: monitor@tudominio.com
-EMAIL_TO            = os.environ["EMAIL_TO"]         # ej: equipo@tudominio.com (separados por coma)
+ETHERSCAN_API_KEY = os.environ["POLYGONSCAN_API_KEY"]
+BREVO_SMTP_KEY    = os.environ["BREVO_SMTP_KEY"]
+EMAIL_FROM        = os.environ["EMAIL_FROM"]
+EMAIL_TO          = os.environ["EMAIL_TO"]
 
-# Direcciones de wallet a monitorear (añade o quita según necesites)
 WALLETS = {
     "Wallet Principal": os.environ["WALLET_ADDRESS_1"],
-    # "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],  # descomenta si usas 2
 }
 
-# Dirección del contrato emisor de Reental (filtramos solo sus tokens)
-REENTAL_ISSUER = "0x6D7B3113A1Af7f6f91dC7fB1a6Eda97c31FBf48"  # actualiza si cambia
+API_BASE = "https://api.etherscan.io/v2/api"
 
-POLYGONSCAN_BASE = "https://api.etherscan.io/v2/api?chainid=137"
-
-# ─── Lógica de consulta ───────────────────────────────────────────────────────
+# ─── Consulta de tokens ───────────────────────────────────────────────────────
 
 def get_reental_tokens(wallet_address: str) -> list[dict]:
-    """
-    Obtiene todos los tokens ERC-20 de una wallet en Polygon.
-    Filtra los emitidos por Reental comparando el campo 'contractAddress'
-    contra la lista de tokens conocidos de Reental.
-    """
     params = {
-        "module":  "account",
-        "action":  "tokentx",
-        "address": wallet_address,
+        "chainid":    "137",
+        "module":     "account",
+        "action":     "tokentx",
+        "address":    wallet_address,
         "startblock": 0,
         "endblock":   99999999,
-        "sort":    "asc",
-        "apikey":  POLYGONSCAN_API_KEY,
+        "sort":       "asc",
+        "apikey":     ETHERSCAN_API_KEY,
     }
-    resp = requests.get(POLYGONSCAN_BASE, params=params, timeout=30)
+    resp = requests.get(API_BASE, params=params, timeout=30)
     resp.raise_for_status()
     data = resp.json()
 
     if data["status"] != "1":
-        print(f"Sin transacciones para {wallet_address}: {data.get('message')}")
+        print(f"  ! Sin transacciones: {data.get('message')} / {data.get('result')}")
         return []
 
-    # Identificamos contratos únicos de Reental
-    # Estrategia: agrupamos por contractAddress y calculamos balance neto
-    # (suma de entradas - suma de salidas)
+    # Calcular balance neto por contrato
     balances: dict[str, dict] = {}
     wallet_lower = wallet_address.lower()
 
     for tx in data["result"]:
         contract = tx["contractAddress"].lower()
-        decimals = int(tx["tokenDecimal"])
+        decimals = int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18
         value    = int(tx["value"]) / (10 ** decimals)
         name     = tx["tokenName"]
         symbol   = tx["tokenSymbol"]
@@ -79,26 +68,29 @@ def get_reental_tokens(wallet_address: str) -> list[dict]:
         elif tx["from"].lower() == wallet_lower:
             balances[contract]["balance"] -= value
 
-    # Filtramos tokens con balance positivo
-    # y que contengan "RRT" o "Reental" en el nombre (ajusta según naming de Reental)
+    # Debug: mostrar todos los tokens para verificar nombres exactos
+    print(f"  Todos los tokens con balance positivo:")
+    for t in balances.values():
+        if t["balance"] > 0:
+            print(f"    · [{t['token_name']}] ({t['token_symbol']}) — {t['balance']:.4f}")
+
+    # Filtrar tokens de Reental
     reental_tokens = [
-    t for t in balances.values()
-    if t["balance"] > 0 and
-    t["token_name"].upper().startswith("REENTAL-")
-]
+        t for t in balances.values()
+        if t["balance"] > 0 and "reental" in t["token_name"].lower()
+    ]
 
     return sorted(reental_tokens, key=lambda x: x["token_name"])
 
 
-# ─── Construcción del email ───────────────────────────────────────────────────
+# ─── Email HTML ───────────────────────────────────────────────────────────────
 
 def build_email_html(report: dict) -> str:
     fecha = report["fecha"]
     secciones_html = ""
 
     for wallet_name, tokens in report["wallets"].items():
-        wallet_addr = report["addresses"][wallet_name]
-        short_addr  = f"{wallet_addr[:6]}...{wallet_addr[-4:]}"
+        wallet_addr     = report["addresses"][wallet_name]
         polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
 
         if not tokens:
@@ -108,21 +100,18 @@ def build_email_html(report: dict) -> str:
             for t in tokens:
                 rows += f"""
                 <tr>
-                  <td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:12px;color:#555;'>{t['token_address']}</td>
+                  <td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:11px;color:#777;'>{t['token_address']}</td>
                   <td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;'>{t['token_name']}</td>
                   <td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1a1a2e;'>{t['balance']:.4f}</td>
                 </tr>"""
 
-        total = len(tokens)
         secciones_html += f"""
         <div style='margin-bottom:32px;'>
-          <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+          <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>
             <span style='font-size:15px;font-weight:600;color:#1a1a2e;'>{wallet_name}</span>
-            <a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>
-              Ver en Polygonscan →
-            </a>
+            <a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>Ver en Polygonscan →</a>
           </div>
-          <div style='font-size:12px;color:#888;margin-bottom:12px;font-family:monospace;'>{wallet_addr}</div>
+          <div style='font-size:11px;color:#999;margin-bottom:12px;font-family:monospace;'>{wallet_addr}</div>
           <table width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;font-size:13px;'>
             <thead>
               <tr style='background:#f5f3ff;'>
@@ -133,74 +122,56 @@ def build_email_html(report: dict) -> str:
             </thead>
             <tbody>{rows}</tbody>
           </table>
-          <div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>
-            {total} token{'s' if total != 1 else ''} Reental encontrado{'s' if total != 1 else ''}
-          </div>
+          <div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>{len(tokens)} token{'s' if len(tokens) != 1 else ''} encontrado{'s' if len(tokens) != 1 else ''}</div>
         </div>"""
 
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <body style='margin:0;padding:0;background:#f8f8fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'>
+    return f"""<!DOCTYPE html>
+    <html><body style='margin:0;padding:0;background:#f8f8fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'>
       <div style='max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>
-
-        <!-- Header -->
         <div style='background:linear-gradient(135deg,#6c4de6 0%,#4f35b3 100%);padding:28px 32px;'>
           <div style='color:#e8e0ff;font-size:12px;margin-bottom:4px;letter-spacing:0.5px;'>REENTAL MONITOR</div>
           <div style='color:#fff;font-size:22px;font-weight:600;'>Reporte diario de tokens</div>
           <div style='color:#c4b5fd;font-size:13px;margin-top:6px;'>{fecha} · Red Polygon</div>
         </div>
-
-        <!-- Contenido -->
-        <div style='padding:28px 32px;'>
-          {secciones_html}
-        </div>
-
-        <!-- Footer -->
+        <div style='padding:28px 32px;'>{secciones_html}</div>
         <div style='padding:20px 32px;border-top:1px solid #f0f0f0;background:#fafafa;'>
-          <p style='margin:0;font-size:11px;color:#aaa;'>
-            Este reporte se genera automáticamente cada día a las 08:00h (hora España).<br>
-            Datos obtenidos de Polygonscan · Red Polygon PoS
-          </p>
+          <p style='margin:0;font-size:11px;color:#aaa;'>Reporte automático diario 08:00h (hora España) · Datos: Etherscan API V2 · Red Polygon PoS</p>
         </div>
-
       </div>
-    </body>
-    </html>
-    """
+    </body></html>"""
 
 
 def build_email_text(report: dict) -> str:
-    lines = [f"REENTAL MONITOR — {report['fecha']}\n{'='*50}\n"]
+    lines = [f"REENTAL MONITOR — {report['fecha']}\n{'='*50}"]
     for wallet_name, tokens in report["wallets"].items():
-        lines.append(f"\n{wallet_name}")
-        lines.append(report["addresses"][wallet_name])
-        lines.append("-" * 40)
+        lines.append(f"\n{wallet_name}\n{report['addresses'][wallet_name]}\n{'-'*40}")
         if not tokens:
             lines.append("Sin tokens Reental detectados.")
         else:
             for t in tokens:
-                lines.append(f"  {t['token_name']:<30} {t['balance']:.4f}")
+                lines.append(f"  {t['token_name']:<35} {t['balance']:.4f}")
                 lines.append(f"  {t['token_address']}")
-        lines.append("")
-    lines.append("\nDatos: Polygonscan · Red Polygon PoS")
+    lines.append("\nDatos: Etherscan API V2 · Red Polygon PoS")
     return "\n".join(lines)
 
 
-# ─── Envío de email ───────────────────────────────────────────────────────────
+# ─── Envío por Brevo SMTP ─────────────────────────────────────────────────────
 
 def send_email(subject: str, html_content: str, text_content: str):
     recipients = [r.strip() for r in EMAIL_TO.split(",")]
-    message = Mail(
-        from_email=EMAIL_FROM,
-        to_emails=recipients,
-        subject=subject,
-        html_content=html_content,
-        plain_text_content=text_content,
-    )
-    sg = SendGridAPIClient(SENDGRID_API_KEY)
-    response = sg.send(message)
-    print(f"Email enviado. Status: {response.status_code}")
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = EMAIL_FROM
+    msg["To"]      = ", ".join(recipients)
+    msg.attach(MIMEText(text_content, "plain"))
+    msg.attach(MIMEText(html_content, "html"))
+
+    with smtplib.SMTP_SSL("smtp-relay.brevo.com", 465) as server:
+        server.login(EMAIL_FROM, BREVO_SMTP_KEY)
+        server.sendmail(EMAIL_FROM, recipients, msg.as_string())
+
+    print("  Email enviado correctamente.")
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -209,24 +180,17 @@ def main():
     fecha = datetime.now(timezone.utc).strftime("%d %b %Y")
     print(f"[{datetime.now().isoformat()}] Iniciando consulta de wallets...")
 
-    report = {
-        "fecha":     fecha,
-        "wallets":   {},
-        "addresses": {},
-    }
+    report = {"fecha": fecha, "wallets": {}, "addresses": {}}
 
     for wallet_name, wallet_address in WALLETS.items():
         print(f"  → Consultando {wallet_name} ({wallet_address[:10]}...)")
         tokens = get_reental_tokens(wallet_address)
         report["wallets"][wallet_name]   = tokens
         report["addresses"][wallet_name] = wallet_address
-        print(f"     {len(tokens)} tokens encontrados")
+        print(f"  → {len(tokens)} tokens Reental encontrados")
 
-    subject      = f"Reental · Reporte diario {fecha}"
-    html_content = build_email_html(report)
-    text_content = build_email_text(report)
-
-    send_email(subject, html_content, text_content)
+    subject = f"Reental · Reporte diario {fecha}"
+    send_email(subject, build_email_html(report), build_email_text(report))
     print("Proceso completado.")
 
 
