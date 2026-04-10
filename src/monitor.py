@@ -66,7 +66,7 @@ def get_reental_tokens(wallet_address):
     for t in reental_tokens:
         print(f"    · {t['token_name']} ({t['token_symbol']}) — {t['balance']:.4f}")
 
-        return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
+    return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
 
 
 def build_email_html(report):
@@ -76,6 +76,7 @@ def build_email_html(report):
     for wallet_name, tokens in report["wallets"].items():
         wallet_addr = report["addresses"][wallet_name]
         polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
+        total_tokens = sum(t["balance"] for t in tokens)
 
         if not tokens:
             rows = "<tr><td colspan='3' style='color:#888;padding:12px 0;'>Sin tokens Reental detectados</td></tr>"
@@ -89,6 +90,12 @@ def build_email_html(report):
                     f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1a1a2e;'>{t['balance']:.4f}</td>"
                     "</tr>"
                 )
+            rows += (
+                "<tr style='background:#f5f3ff;'>"
+                "<td colspan='2' style='padding:12px;font-weight:600;color:#4f35b3;font-size:13px;'>TOTAL TOKENS</td>"
+                f"<td style='padding:12px;text-align:right;font-weight:700;color:#4f35b3;font-size:16px;'>{total_tokens:.4f}</td>"
+                "</tr>"
+            )
 
         secciones_html += (
             "<div style='margin-bottom:32px;'>"
@@ -105,7 +112,7 @@ def build_email_html(report):
             "</tr></thead>"
             f"<tbody>{rows}</tbody>"
             "</table>"
-            f"<div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>{len(tokens)} tokens encontrados</div>"
+            f"<div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>{len(tokens)} propiedades</div>"
             "</div>"
         )
 
@@ -138,6 +145,9 @@ def build_email_text(report):
             for t in tokens:
                 lines.append(f"  {t['token_name']:<35} {t['balance']:.4f}")
                 lines.append(f"  {t['token_address']}")
+            total = sum(t["balance"] for t in tokens)
+            lines.append("-" * 40)
+            lines.append(f"  {'TOTAL':<35} {total:.4f}")
     lines.append("\nDatos: Etherscan API V2 · Red Polygon PoS")
     return "\n".join(lines)
 
