@@ -11,7 +11,7 @@ EMAIL_FROM        = os.environ["EMAIL_FROM"]
 EMAIL_TO          = os.environ["EMAIL_TO"]
 
 WALLETS = {
-    "Wallet Principal": os.environ["WALLET_ADDRESS_1"],
+    "Wallet Principal":  os.environ["WALLET_ADDRESS_1"],
     "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],
 }
 
@@ -70,52 +70,72 @@ def get_reental_tokens(wallet_address):
     return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
 
 
+def build_wallet_section(wallet_name, tokens, wallet_addr):
+    polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
+    total_tokens = sum(t["balance"] for t in tokens)
+
+    if not tokens:
+        rows = "<tr><td colspan='3' style='color:#888;padding:12px 0;'>Sin tokens Reental detectados</td></tr>"
+    else:
+        rows = ""
+        for t in tokens:
+            rows += (
+                "<tr>"
+                f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:11px;color:#777;'>{t['token_address']}</td>"
+                f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;'>{t['token_name']}</td>"
+                f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1a1a2e;'>{t['balance']:.4f}</td>"
+                "</tr>"
+            )
+        rows += (
+            "<tr style='background:#f5f3ff;'>"
+            "<td colspan='2' style='padding:12px;font-weight:600;color:#4f35b3;font-size:13px;'>TOTAL WALLET</td>"
+            f"<td style='padding:12px;text-align:right;font-weight:700;color:#4f35b3;font-size:16px;'>{total_tokens:.4f}</td>"
+            "</tr>"
+        )
+
+    return (
+        "<div style='margin-bottom:32px;'>"
+        "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>"
+        f"<span style='font-size:15px;font-weight:600;color:#1a1a2e;'>{wallet_name}</span>"
+        f"<a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>Ver en Polygonscan</a>"
+        "</div>"
+        f"<div style='font-size:11px;color:#999;margin-bottom:12px;font-family:monospace;'>{wallet_addr}</div>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;font-size:13px;'>"
+        "<thead><tr style='background:#f5f3ff;'>"
+        "<th style='padding:8px 12px;text-align:left;font-weight:500;color:#555;font-size:12px;'>Token Address</th>"
+        "<th style='padding:8px 12px;text-align:left;font-weight:500;color:#555;font-size:12px;'>Nombre</th>"
+        "<th style='padding:8px 12px;text-align:right;font-weight:500;color:#555;font-size:12px;'>Cantidad</th>"
+        "</tr></thead>"
+        f"<tbody>{rows}</tbody>"
+        "</table>"
+        f"<div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>{len(tokens)} propiedades</div>"
+        "</div>"
+    ), total_tokens
+
+
 def build_email_html(report):
     fecha = report["fecha"]
     secciones_html = ""
+    gran_total = 0.0
 
     for wallet_name, tokens in report["wallets"].items():
         wallet_addr = report["addresses"][wallet_name]
-        polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
-        total_tokens = sum(t["balance"] for t in tokens)
+        seccion, subtotal = build_wallet_section(wallet_name, tokens, wallet_addr)
+        secciones_html += seccion
+        gran_total += subtotal
 
-        if not tokens:
-            rows = "<tr><td colspan='3' style='color:#888;padding:12px 0;'>Sin tokens Reental detectados</td></tr>"
-        else:
-            rows = ""
-            for t in tokens:
-                rows += (
-                    "<tr>"
-                    f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:11px;color:#777;'>{t['token_address']}</td>"
-                    f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;'>{t['token_name']}</td>"
-                    f"<td style='padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1a1a2e;'>{t['balance']:.4f}</td>"
-                    "</tr>"
-                )
-            rows += (
-                "<tr style='background:#f5f3ff;'>"
-                "<td colspan='2' style='padding:12px;font-weight:600;color:#4f35b3;font-size:13px;'>TOTAL TOKENS</td>"
-                f"<td style='padding:12px;text-align:right;font-weight:700;color:#4f35b3;font-size:16px;'>{total_tokens:.4f}</td>"
-                "</tr>"
-            )
-
-        secciones_html += (
-            "<div style='margin-bottom:32px;'>"
-            "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>"
-            f"<span style='font-size:15px;font-weight:600;color:#1a1a2e;'>{wallet_name}</span>"
-            f"<a href='{polygonscan_url}' style='font-size:12px;color:#6c4de6;text-decoration:none;'>Ver en Polygonscan</a>"
-            "</div>"
-            f"<div style='font-size:11px;color:#999;margin-bottom:12px;font-family:monospace;'>{wallet_addr}</div>"
-            "<table width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;font-size:13px;'>"
-            "<thead><tr style='background:#f5f3ff;'>"
-            "<th style='padding:8px 12px;text-align:left;font-weight:500;color:#555;font-size:12px;'>Token Address</th>"
-            "<th style='padding:8px 12px;text-align:left;font-weight:500;color:#555;font-size:12px;'>Nombre</th>"
-            "<th style='padding:8px 12px;text-align:right;font-weight:500;color:#555;font-size:12px;'>Cantidad</th>"
-            "</tr></thead>"
-            f"<tbody>{rows}</tbody>"
-            "</table>"
-            f"<div style='font-size:12px;color:#888;margin-top:8px;text-align:right;'>{len(tokens)} propiedades</div>"
-            "</div>"
-        )
+    # Bloque de gran total combinado
+    gran_total_html = (
+        "<div style='margin:0 0 32px;padding:20px 24px;background:linear-gradient(135deg,#6c4de6 0%,#4f35b3 100%);"
+        "border-radius:12px;display:flex;justify-content:space-between;align-items:center;'>"
+        "<div>"
+        "<div style='color:#e8e0ff;font-size:11px;margin-bottom:4px;letter-spacing:0.5px;'>TOTAL COMBINADO — AMBAS WALLETS</div>"
+        f"<div style='color:#fff;font-size:28px;font-weight:700;letter-spacing:-0.5px;'>{gran_total:.4f}</div>"
+        "<div style='color:#c4b5fd;font-size:12px;margin-top:2px;'>tokens Reental</div>"
+        "</div>"
+        "<div style='color:#a78bfa;font-size:40px;'>&#9632;</div>"
+        "</div>"
+    )
 
     return (
         "<!DOCTYPE html><html><body style='margin:0;padding:0;background:#f8f8fb;"
@@ -127,7 +147,7 @@ def build_email_html(report):
         "<div style='color:#fff;font-size:22px;font-weight:600;'>Reporte diario de tokens</div>"
         f"<div style='color:#c4b5fd;font-size:13px;margin-top:6px;'>{fecha} · Red Polygon</div>"
         "</div>"
-        f"<div style='padding:28px 32px;'>{secciones_html}</div>"
+        f"<div style='padding:28px 32px;'>{gran_total_html}{secciones_html}</div>"
         "<div style='padding:20px 32px;border-top:1px solid #f0f0f0;background:#fafafa;'>"
         "<p style='margin:0;font-size:11px;color:#aaa;'>Reporte automatico diario 08:00h (hora Espana) · Red Polygon PoS</p>"
         "</div></div></body></html>"
@@ -136,6 +156,7 @@ def build_email_html(report):
 
 def build_email_text(report):
     lines = [f"REENTAL MONITOR — {report['fecha']}", "=" * 50]
+    gran_total = 0.0
     for wallet_name, tokens in report["wallets"].items():
         lines.append(f"\n{wallet_name}")
         lines.append(report["addresses"][wallet_name])
@@ -146,9 +167,13 @@ def build_email_text(report):
             for t in tokens:
                 lines.append(f"  {t['token_name']:<35} {t['balance']:.4f}")
                 lines.append(f"  {t['token_address']}")
-            total = sum(t["balance"] for t in tokens)
+            subtotal = sum(t["balance"] for t in tokens)
+            gran_total += subtotal
             lines.append("-" * 40)
-            lines.append(f"  {'TOTAL':<35} {total:.4f}")
+            lines.append(f"  {'TOTAL WALLET':<35} {subtotal:.4f}")
+    lines.append("\n" + "=" * 50)
+    lines.append(f"  {'TOTAL COMBINADO':<35} {gran_total:.4f}")
+    lines.append("=" * 50)
     lines.append("\nDatos: Etherscan API V2 · Red Polygon PoS")
     return "\n".join(lines)
 
