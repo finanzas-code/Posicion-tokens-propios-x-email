@@ -12,6 +12,7 @@ EMAIL_TO          = os.environ["EMAIL_TO"]
 
 WALLETS = {
     "Wallet Principal": os.environ["WALLET_ADDRESS_1"],
+    "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],
 }
 
 API_BASE = "https://api.etherscan.io/v2/api"
