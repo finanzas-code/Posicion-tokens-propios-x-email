@@ -17,7 +17,7 @@ WALLETS = {
 
 API_BASE = "https://api.etherscan.io/v2/api"
 
-LOGO_B64 = "PHN2ZyB3aWR0aD0iMjc1IiBoZWlnaHQ9IjI3NSIgdmlld0JveD0iMCAwIDI3NSAyNzUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8yMTgzXzc2NCkiPgo8Y2lyY2xlIGN4PSIxMzcuMzI4IiBjeT0iMTM3LjUyMSIgcj0iMTIxLjcxMyIgZmlsbD0iIzFGMjkzNyIvPgo8cGF0aCBkPSJNMTM3LjMxNiAwLjAyMjM1NDFDNjEuNDgyNiAwLjAyMjM1NDEgMC4wMDc4MTI1IDYxLjQ5NzEgMC4wMDc4MTI1IDEzNy4zMzFDMC4wMDc4MTI1IDIxMy4xNjQgNjEuNDgyNiAyNzQuNjM4IDEzNy4zMTYgMjc0LjYzOEMyMTMuMTQ5IDI3NC42MzggMjc0LjYyNCAyMTMuMTY0IDI3NC42MjQgMTM3LjMzMUMyNzQuNjI0IDYxLjQ5NzEgMjEzLjE0OSAwLjAyMjM1NDEgMTM3LjMxNiAwLjAyMjM1NDFaTTEzNy4zMTYgMjU4LjM5MkMxMTMuMzcyIDI1OC4zOTIgODkuOTY2MyAyNTEuMjkyIDcwLjA1NzcgMjM3Ljk4OUM1MC4xNDkyIDIyNC42ODcgMzQuNjMyNiAyMDUuNzggMjUuNDY5OCAxODMuNjU5QzE2LjMwNjkgMTYxLjUzNyAxMy45MDk1IDEzNy4xOTYgMTguNTgwNyAxMTMuNzEzQzIzLjI1MTkgOTAuMjI4OSAzNC43ODE5IDY4LjY1OCA1MS43MTI0IDUxLjcyNjlDNjguNjQzNCAzNC43OTY1IDkwLjIxNDMgMjMuMjY2NCAxMTMuNjk4IDE4LjU5NTNDMTM3LjE4MiAxMy45MjQxIDE2MS41MjMgMTYuMzIxNSAxODMuNjQ0IDI1LjQ4NDNDMjA1Ljc2NSAzNC42NDcyIDIyNC42NzIgNTAuMTYzNyAyMzcuOTc1IDcwLjA3MjNDMjUxLjI3NyA4OS45ODA5IDI1OC4zNzcgMTEzLjM4NyAyNTguMzc3IDEzNy4zMzFDMjU4LjM3NyAxNjkuNDM4IDI0NS42MjMgMjAwLjIzMSAyMjIuOTE5IDIyMi45MzRDMjAwLjIxNiAyNDUuNjM3IDE2OS40MjQgMjU4LjM5MiAxMzcuMzE2IDI1OC4zOTJaIiBmaWxsPSIjRkNBMzExIi8+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMV8yMTgzXzc2NCkiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTc4LjA4OTggNjMuMDU1MkM3OC4wODk4IDYxLjc2MzkgNzkuMTM2NyA2MC43MTcxIDgwLjQyOCA2MC43MTcxSDE0My4xNzlDMTQ2Ljc4OSA2MC43MTcxIDE1MS4zNTcgNjAuODgwNiAxNTYuMDY0IDYyLjA3ODlDMTY2LjYzNCA2NC43Njk4IDE4MC44NzEgNzEuNjcwNiAxODkuMjg5IDg0LjAyOTlDMjAwLjc0NiAxMDIuNTkxIDIwMS41MDggMTI1LjMzIDE4Ni43NzMgMTQ1LjkzN0MxODUuOTcxIDE0Ny4wNiAxODQuMzY2IDE0Ny4xODggMTgzLjM1OSAxNDYuMjQ0TDE2OS44MzcgMTMzLjU2NUMxNjkuMDM4IDEzMi44MTUgMTY4Ljg3MiAxMzEuNjExIDE2OS40MDEgMTMwLjY1MkMxNzcuODE4IDExNS4zOCAxNzMuODIgMTA2LjQzIDE3MC4yIDk5LjE0MDlDMTY2LjQzIDkxLjU1MDcgMTU4LjI4NSA4Ni4yODg0IDE1MS40MSA4NC4wMjk5QzE0NC4xNjEgODAuNzc3IDEzMC44MTcgODEuMzE5MSAxMjcuODUxIDgxLjMxOTFIMTA1LjEyMUMxMDMuODMgODEuMzE5MSAxMDIuNzgzIDgyLjM2NTkgMTAyLjc4MyA4My42NTcyVjE3NS45MjJDMTAyLjc4MyAxNzYuNzAyIDEwMi4zOTQgMTc3LjQzMSAxMDEuNzQ1IDE3Ny44NjVMODEuNzI4MiAxOTEuMjU4QzgwLjE3NDYgMTkyLjI5NyA3OC4wODk4IDE5MS4xODQgNzguMDg5OCAxODkuMzE1VjYzLjA1NTJaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTE0NS44NzEgMTUxLjIzQzE0Ni40MjUgMTUwLjg0MyAxNDcuMTc1IDE1MC45IDE0Ny42NjQgMTUxLjM2NkwyMTEuMTkxIDIxMS45MDlDMjEyLjExOSAyMTIuNzkzIDIxMS40OTMgMjE0LjM1NyAyMTAuMjExIDIxNC4zNTdIMTgxLjAyOEMxNzkuNTQ4IDIxNC4zNTcgMTc4LjEyNiAyMTMuNzggMTc3LjA2NSAyMTIuNzQ3TDE0NC41NzcgMTgxLjExNEwxMzQuMjQ0IDE3MC43ODFMMTI4LjcwNSAxNjUuMjQyQzEyOC4wOCAxNjQuNjE2IDEyOC4xNzEgMTYzLjU3OCAxMjguODk2IDE2My4wNzJMMTQ1Ljg3MSAxNTEuMjNaIiBmaWxsPSJ3aGl0ZSIvPgo8L2c+CjwvZz4KPGRlZnM+CjxjbGlwUGF0aCBpZD0iY2xpcDBfMjE4M183NjQiPgo8cmVjdCB3aWR0aD0iMjc0LjY1OCIgaGVpZ2h0PSIyNzQuNjU4IiBmaWxsPSJ3aGl0ZSIvPgo8L2NsaXBQYXRoPgo8Y2xpcFBhdGggaWQ9ImNsaXAxXzIxODNfNzY0Ij4KPHJlY3Qgd2lkdGg9IjEzMy41NjgiIGhlaWdodD0iMTUzLjYyIiBmaWxsPSJ3aGl0ZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzguMDg5OCA2MC42NjQ4KSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo="
+LOGO_SVG = '<svg width="52" height="52" viewBox="0 0 275 275" fill="none" xmlns="http://www.w3.org/2000/svg">\n<g clip-path="url(#clip0_2183_764)">\n<circle cx="137.328" cy="137.521" r="121.713" fill="#1F2937"/>\n<path d="M137.316 0.0223541C61.4826 0.0223541 0.0078125 61.4971 0.0078125 137.331C0.0078125 213.164 61.4826 274.638 137.316 274.638C213.149 274.638 274.624 213.164 274.624 137.331C274.624 61.4971 213.149 0.0223541 137.316 0.0223541ZM137.316 258.392C113.372 258.392 89.9663 251.292 70.0577 237.989C50.1492 224.687 34.6326 205.78 25.4698 183.659C16.3069 161.537 13.9095 137.196 18.5807 113.713C23.2519 90.2289 34.7819 68.658 51.7124 51.7269C68.6434 34.7965 90.2143 23.2664 113.698 18.5953C137.182 13.9241 161.523 16.3215 183.644 25.4843C205.765 34.6472 224.672 50.1637 237.975 70.0723C251.277 89.9809 258.377 113.387 258.377 137.331C258.377 169.438 245.623 200.231 222.919 222.934C200.216 245.637 169.424 258.392 137.316 258.392Z" fill="#FCA311"/>\n<g clip-path="url(#clip1_2183_764)">\n<path fill-rule="evenodd" clip-rule="evenodd" d="M78.0898 63.0552C78.0898 61.7639 79.1367 60.7171 80.428 60.7171H143.179C146.789 60.7171 151.357 60.8806 156.064 62.0789C166.634 64.7698 180.871 71.6706 189.289 84.0299C200.746 102.591 201.508 125.33 186.773 145.937C185.971 147.06 184.366 147.188 183.359 146.244L169.837 133.565C169.038 132.815 168.872 131.611 169.401 130.652C177.818 115.38 173.82 106.43 170.2 99.1409C166.43 91.5507 158.285 86.2884 151.41 84.0299C144.161 80.777 130.817 81.3191 127.851 81.3191H105.121C103.83 81.3191 102.783 82.3659 102.783 83.6572V175.922C102.783 176.702 102.394 177.431 101.745 177.865L81.7282 191.258C80.1746 192.297 78.0898 191.184 78.0898 189.315V63.0552Z" fill="white"/>\n<path fill-rule="evenodd" clip-rule="evenodd" d="M145.871 151.23C146.425 150.843 147.175 150.9 147.664 151.366L211.191 211.909C212.119 212.793 211.493 214.357 210.211 214.357H181.028C179.548 214.357 178.126 213.78 177.065 212.747L144.577 181.114L134.244 170.781L128.705 165.242C128.08 164.616 128.171 163.578 128.896 163.072L145.871 151.23Z" fill="white"/>\n</g>\n</g>\n<defs>\n<clipPath id="clip0_2183_764">\n<rect width="274.658" height="274.658" fill="white"/>\n</clipPath>\n<clipPath id="clip1_2183_764">\n<rect width="133.568" height="153.62" fill="white" transform="translate(78.0898 60.6648)"/>\n</clipPath>\n</defs>\n</svg>'
 
 
 def get_reental_tokens(wallet_address):
@@ -34,19 +34,15 @@ def get_reental_tokens(wallet_address):
     resp = requests.get(API_BASE, params=params, timeout=30)
     resp.raise_for_status()
     data = resp.json()
-
     if data["status"] != "1":
         print(f"  ! Sin transacciones: {data.get('message')}")
         return []
-
     balances = {}
     wallet_lower = wallet_address.lower()
-
     for tx in data["result"]:
         contract = tx["contractAddress"].lower()
         decimals = int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18
         value = int(tx["value"]) / (10 ** decimals)
-
         if contract not in balances:
             balances[contract] = {
                 "token_address": tx["contractAddress"],
@@ -54,28 +50,23 @@ def get_reental_tokens(wallet_address):
                 "token_symbol":  tx["tokenSymbol"],
                 "balance":       0.0,
             }
-
         if tx["to"].lower() == wallet_lower:
             balances[contract]["balance"] += value
         elif tx["from"].lower() == wallet_lower:
             balances[contract]["balance"] -= value
-
     reental_tokens = [
         t for t in balances.values()
         if t["balance"] > 0 and "reental" in t["token_symbol"].lower()
     ]
-
     print(f"  Tokens Reental encontrados: {len(reental_tokens)}")
     for t in reental_tokens:
         print(f"    · {t['token_name']} ({t['token_symbol']}) — {t['balance']:.4f}")
-
     return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
 
 
 def build_wallet_section(wallet_name, tokens, wallet_addr):
     polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
     subtotal = sum(t["balance"] for t in tokens)
-
     if not tokens:
         rows = "<tr><td colspan='3' style='color:#888;padding:12px 0;'>Sin tokens Reental detectados</td></tr>"
     else:
@@ -94,7 +85,6 @@ def build_wallet_section(wallet_name, tokens, wallet_addr):
             f"<td style='padding:11px 12px;text-align:right;font-weight:700;color:#FCA311;font-size:15px;'>{subtotal:.4f}</td>"
             "</tr>"
         )
-
     section = (
         "<div style='margin-bottom:28px;'>"
         "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>"
@@ -120,19 +110,15 @@ def build_email_html(report):
     fecha = report["fecha"]
     secciones_html = ""
     gran_total = 0.0
-
     for wallet_name, tokens in report["wallets"].items():
         wallet_addr = report["addresses"][wallet_name]
         seccion, subtotal = build_wallet_section(wallet_name, tokens, wallet_addr)
         secciones_html += seccion
         gran_total += subtotal
-
-    logo_img = f"<img src='data:image/svg+xml;base64,{LOGO_B64}' width='52' height='52' style='display:block;' alt='Reental' />"
-
     header = (
         "<div style='background:#1F2937;padding:24px 28px;'>"
         "<table width='100%' cellpadding='0' cellspacing='0'><tr>"
-        f"<td style='width:60px;vertical-align:middle;'>{logo_img}</td>"
+        f"<td style='width:60px;vertical-align:middle;'>{LOGO_SVG}</td>"
         "<td style='vertical-align:middle;padding-left:16px;'>"
         "<div style='color:#FCA311;font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:2px;'>REENTAL MONITOR</div>"
         "<div style='color:#fff;font-size:18px;font-weight:700;margin-bottom:2px;'>Reporte diario de tokens</div>"
@@ -146,7 +132,6 @@ def build_email_html(report):
         "</tr></table>"
         "</div>"
     )
-
     return (
         "<!DOCTYPE html><html><body style='margin:0;padding:0;background:#f3f4f6;"
         "font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;'>"
@@ -186,34 +171,28 @@ def build_email_text(report):
 
 def send_email(subject, html_content, text_content):
     recipients = [r.strip() for r in EMAIL_TO.split(",")]
-
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = EMAIL_FROM
     msg["To"] = ", ".join(recipients)
     msg.attach(MIMEText(text_content, "plain"))
     msg.attach(MIMEText(html_content, "html"))
-
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
         server.login(EMAIL_FROM, SMTP_PASSWORD)
         server.sendmail(EMAIL_FROM, recipients, msg.as_string())
-
     print("  Email enviado correctamente.")
 
 
 def main():
     fecha = datetime.now(timezone.utc).strftime("%d %b %Y")
     print(f"[{datetime.now().isoformat()}] Iniciando consulta de wallets...")
-
     report = {"fecha": fecha, "wallets": {}, "addresses": {}}
-
     for wallet_name, wallet_address in WALLETS.items():
         print(f"  -> Consultando {wallet_name} ({wallet_address[:10]}...)")
         tokens = get_reental_tokens(wallet_address)
         report["wallets"][wallet_name] = tokens
         report["addresses"][wallet_name] = wallet_address
-
     subject = f"Reental · Reporte diario {fecha}"
     send_email(subject, build_email_html(report), build_email_text(report))
     print("Proceso completado.")
