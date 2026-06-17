@@ -54,7 +54,7 @@ def get_reental_tokens(wallet_address):
     resp.raise_for_status()
     tokens = resp.json()
 
-    RPC_URL        = "https://polygon-rpc.com"
+    RPC_URL        = "https://rpc.ankr.com/polygon"
     BALANCE_OF_SIG = "0x70a08231"
     wallet_padded  = wallet_address[2:].lower().zfill(64)
 
