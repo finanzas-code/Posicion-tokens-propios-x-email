@@ -22,7 +22,7 @@ LOGO_SVG = '<svg width="52" height="52" viewBox="0 0 275 275" fill="none" xmlns=
 
 
 def get_reental_tokens(wallet_address):
-    # Moralis Web3 API - balance real on-chain en Polygon
+    # Paso 1: obtener lista de contratos Reental via Moralis
     url = f"https://deep-index.moralis.io/api/v2.2/{wallet_address}/erc20"
     headers = {"X-API-Key": MORALIS_API_KEY}
     params = {"chain": "polygon"}
@@ -31,17 +31,39 @@ def get_reental_tokens(wallet_address):
     resp.raise_for_status()
     tokens = resp.json()
 
+    # Filtrar contratos Reental
+    contratos = [t for t in tokens if "reental" in t.get("symbol", "").lower()]
+
+    # Paso 2: leer balance real via RPC directo (balanceOf) para cada contrato
+    RPC_URL = "https://polygon-rpc.com"
+    BALANCE_OF_SIG = "0x70a08231"  # balanceOf(address)
+    wallet_padded = wallet_address[2:].lower().zfill(64)
+
     reental_tokens = []
-    for t in tokens:
-        symbol = t.get("symbol", "")
-        if "reental" not in symbol.lower():
-            continue
+    for t in contratos:
+        contract = t.get("token_address", "")
+        symbol   = t.get("symbol", "")
+        name     = t.get("name", symbol)
         decimals = int(t.get("decimals", 18))
-        balance = int(t.get("balance", 0)) / (10 ** decimals)
+
+        payload = {
+            "jsonrpc": "2.0",
+            "method":  "eth_call",
+            "params":  [{
+                "to":   contract,
+                "data": BALANCE_OF_SIG + wallet_padded,
+            }, "latest"],
+            "id": 1,
+        }
+        rpc_resp = requests.post(RPC_URL, json=payload, timeout=30)
+        rpc_resp.raise_for_status()
+        result = rpc_resp.json().get("result", "0x0")
+        balance = int(result, 16) / (10 ** decimals)
+
         if balance > 0:
             reental_tokens.append({
-                "token_address": t.get("token_address", ""),
-                "token_name":    t.get("name", symbol),
+                "token_address": contract,
+                "token_name":    name,
                 "token_symbol":  symbol,
                 "balance":       balance,
             })
