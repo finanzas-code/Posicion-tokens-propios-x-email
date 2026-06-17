@@ -54,34 +54,17 @@ def get_reental_tokens(wallet_address):
     resp.raise_for_status()
     tokens = resp.json()
 
-    RPC_URL        = "https://rpc.ankr.com/polygon"
-    BALANCE_OF_SIG = "0x70a08231"
-    wallet_padded  = wallet_address[2:].lower().zfill(64)
-
     reental_tokens = []
     for t in tokens:
         symbol = t.get("symbol", "")
         if "reental" not in symbol.lower():
             continue
-        contract = t.get("token_address", "")
-        name     = t.get("name", symbol)
         decimals = int(t.get("decimals", 18))
-
-        payload = {
-            "jsonrpc": "2.0",
-            "method":  "eth_call",
-            "params":  [{"to": contract, "data": BALANCE_OF_SIG + wallet_padded}, "latest"],
-            "id": 1,
-        }
-        rpc_resp = requests.post(RPC_URL, json=payload, timeout=30)
-        rpc_resp.raise_for_status()
-        result  = rpc_resp.json().get("result", "0x0")
-        balance = int(result, 16) / (10 ** decimals)
-
+        balance  = int(t.get("balance", 0)) / (10 ** decimals)
         if balance > 0:
             reental_tokens.append({
-                "token_address": contract,
-                "token_name":    name,
+                "token_address": t.get("token_address", ""),
+                "token_name":    t.get("name", symbol),
                 "token_symbol":  symbol,
                 "balance":       balance,
             })
@@ -214,7 +197,7 @@ def build_email_text(report):
     lines.append("\n" + "=" * 70)
     lines.append(f"  {'TOTAL COMBINADO':<32} {gran_total:>10.4f}")
     lines.append("=" * 70)
-    lines.append("\nDatos: RPC Polygon · Red Polygon PoS")
+    lines.append("\nDatos: Moralis · Red Polygon PoS")
     return "\n".join(lines)
 
 
