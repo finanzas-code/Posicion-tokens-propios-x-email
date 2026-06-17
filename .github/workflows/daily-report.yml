@@ -32,4 +32,5 @@ jobs:
           EMAIL_TO:            ${{ secrets.EMAIL_TO }}
           WALLET_ADDRESS_1:    ${{ secrets.WALLET_ADDRESS_1 }}
           WALLET_ADDRESS_2:    ${{ secrets.WALLET_ADDRESS_2 }}
+          MORALIS_API_KEY:     ${{ secrets.MORALIS_API_KEY }}
         run: python src/monitor.py
