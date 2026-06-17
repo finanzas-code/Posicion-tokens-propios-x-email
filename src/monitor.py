@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 ETHERSCAN_API_KEY = os.environ["POLYGONSCAN_API_KEY"]
+MORALIS_API_KEY   = os.environ["MORALIS_API_KEY"]
 SMTP_PASSWORD     = os.environ["BREVO_SMTP_KEY"]
 EMAIL_FROM        = os.environ["EMAIL_FROM"]
 EMAIL_TO          = os.environ["EMAIL_TO"]
@@ -21,61 +22,29 @@ LOGO_SVG = '<svg width="52" height="52" viewBox="0 0 275 275" fill="none" xmlns=
 
 
 def get_reental_tokens(wallet_address):
-    # Paso 1: obtener lista de contratos Reental via historial de transacciones
-    params = {
-        "chainid":    "137",
-        "module":     "account",
-        "action":     "tokentx",
-        "address":    wallet_address,
-        "startblock": 0,
-        "endblock":   99999999,
-        "sort":       "asc",
-        "apikey":     ETHERSCAN_API_KEY,
-    }
-    resp = requests.get(API_BASE, params=params, timeout=30)
+    # Moralis Web3 API - balance real on-chain en Polygon
+    url = f"https://deep-index.moralis.io/api/v2.2/{wallet_address}/erc20"
+    headers = {"X-API-Key": MORALIS_API_KEY}
+    params = {"chain": "polygon"}
+
+    resp = requests.get(url, headers=headers, params=params, timeout=30)
     resp.raise_for_status()
-    data = resp.json()
-    if data["status"] != "1":
-        print(f"  ! Sin transacciones: {data.get('message')}")
-        return []
+    tokens = resp.json()
 
-    # Identificar contratos Reental unicos
-    contratos = {}
-    for tx in data["result"]:
-        if "reental" in tx["tokenSymbol"].lower():
-            contract = tx["contractAddress"].lower()
-            if contract not in contratos:
-                contratos[contract] = {
-                    "token_address": tx["contractAddress"],
-                    "token_name":    tx["tokenName"],
-                    "token_symbol":  tx["tokenSymbol"],
-                    "decimals":      int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18,
-                }
-
-    # Paso 2: consultar balance real on-chain para cada contrato
     reental_tokens = []
-    for contract_lower, info in contratos.items():
-        bal_params = {
-            "chainid":         "137",
-            "module":          "account",
-            "action":          "tokenbalance",
-            "contractaddress": info["token_address"],
-            "address":         wallet_address,
-            "tag":             "latest",
-            "apikey":          ETHERSCAN_API_KEY,
-        }
-        bal_resp = requests.get(API_BASE, params=bal_params, timeout=30)
-        bal_resp.raise_for_status()
-        bal_data = bal_resp.json()
-        if bal_data["status"] == "1":
-            balance = int(bal_data["result"]) / (10 ** info["decimals"])
-            if balance > 0:
-                reental_tokens.append({
-                    "token_address": info["token_address"],
-                    "token_name":    info["token_name"],
-                    "token_symbol":  info["token_symbol"],
-                    "balance":       balance,
-                })
+    for t in tokens:
+        symbol = t.get("symbol", "")
+        if "reental" not in symbol.lower():
+            continue
+        decimals = int(t.get("decimals", 18))
+        balance = int(t.get("balance", 0)) / (10 ** decimals)
+        if balance > 0:
+            reental_tokens.append({
+                "token_address": t.get("token_address", ""),
+                "token_name":    t.get("name", symbol),
+                "token_symbol":  symbol,
+                "balance":       balance,
+            })
 
     print(f"  Tokens Reental encontrados: {len(reental_tokens)}")
     for t in reental_tokens:
