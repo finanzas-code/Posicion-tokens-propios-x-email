@@ -16,9 +16,39 @@ WALLETS = {
     "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],
 }
 
-API_BASE = "https://api.etherscan.io/v2/api"
+API_BASE   = "https://api.etherscan.io/v2/api"
+SHEET_ID   = "1E5h0h8bFfLNX-I-XNvm3-NIoYc7S6fnndSn2uv3uwq0"
+SHEET_GID  = "1247043615"
 
 LOGO_SVG = '<svg width="52" height="52" viewBox="0 0 275 275" fill="none" xmlns="http://www.w3.org/2000/svg">\n<g clip-path="url(#clip0_2183_764)">\n<circle cx="137.328" cy="137.521" r="121.713" fill="#1F2937"/>\n<path d="M137.316 0.0223541C61.4826 0.0223541 0.0078125 61.4971 0.0078125 137.331C0.0078125 213.164 61.4826 274.638 137.316 274.638C213.149 274.638 274.624 213.164 274.624 137.331C274.624 61.4971 213.149 0.0223541 137.316 0.0223541ZM137.316 258.392C113.372 258.392 89.9663 251.292 70.0577 237.989C50.1492 224.687 34.6326 205.78 25.4698 183.659C16.3069 161.537 13.9095 137.196 18.5807 113.713C23.2519 90.2289 34.7819 68.658 51.7124 51.7269C68.6434 34.7965 90.2143 23.2664 113.698 18.5953C137.182 13.9241 161.523 16.3215 183.644 25.4843C205.765 34.6472 224.672 50.1637 237.975 70.0723C251.277 89.9809 258.377 113.387 258.377 137.331C258.377 169.438 245.623 200.231 222.919 222.934C200.216 245.637 169.424 258.392 137.316 258.392Z" fill="#FCA311"/>\n<g clip-path="url(#clip1_2183_764)">\n<path fill-rule="evenodd" clip-rule="evenodd" d="M78.0898 63.0552C78.0898 61.7639 79.1367 60.7171 80.428 60.7171H143.179C146.789 60.7171 151.357 60.8806 156.064 62.0789C166.634 64.7698 180.871 71.6706 189.289 84.0299C200.746 102.591 201.508 125.33 186.773 145.937C185.971 147.06 184.366 147.188 183.359 146.244L169.837 133.565C169.038 132.815 168.872 131.611 169.401 130.652C177.818 115.38 173.82 106.43 170.2 99.1409C166.43 91.5507 158.285 86.2884 151.41 84.0299C144.161 80.777 130.817 81.3191 127.851 81.3191H105.121C103.83 81.3191 102.783 82.3659 102.783 83.6572V175.922C102.783 176.702 102.394 177.431 101.745 177.865L81.7282 191.258C80.1746 192.297 78.0898 191.184 78.0898 189.315V63.0552Z" fill="white"/>\n<path fill-rule="evenodd" clip-rule="evenodd" d="M145.871 151.23C146.425 150.843 147.175 150.9 147.664 151.366L211.191 211.909C212.119 212.793 211.493 214.357 210.211 214.357H181.028C179.548 214.357 178.126 213.78 177.065 212.747L144.577 181.114L134.244 170.781L128.705 165.242C128.08 164.616 128.171 163.578 128.896 163.072L145.871 151.23Z" fill="white"/>\n</g>\n</g>\n<defs>\n<clipPath id="clip0_2183_764">\n<rect width="274.658" height="274.658" fill="white"/>\n</clipPath>\n<clipPath id="clip1_2183_764">\n<rect width="133.568" height="153.62" fill="white" transform="translate(78.0898 60.6648)"/>\n</clipPath>\n</defs>\n</svg>'
+
+
+def get_reserved_tokens():
+    """Lee columna A (ID parcial ej: CMY-2) y C (reservados) del Google Sheet publico."""
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={SHEET_GID}"
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+
+    reserved = {}
+    lines = resp.text.strip().split("\n")
+    for line in lines[1:]:  # saltar encabezado
+        cols = line.split(",")
+        if len(cols) >= 3:
+            symbol   = cols[0].strip().strip('"')   # ej: CMY-2
+            raw_val  = cols[2].strip().strip('"').replace(",", ".")
+            try:
+                amount = float(raw_val) if raw_val else 0.0
+            except ValueError:
+                amount = 0.0
+            if symbol:
+                reserved[symbol.upper()] = amount
+    return reserved
+
+
+def symbol_to_key(full_symbol):
+    """Extrae la parte del simbolo despues del primer guion. Reental-CMY-2 -> CMY-2"""
+    parts = full_symbol.split("-", 1)
+    return parts[1].upper() if len(parts) > 1 else full_symbol.upper()
 
 
 def get_reental_tokens(wallet_address):
@@ -74,7 +104,7 @@ def get_reental_tokens(wallet_address):
     return sorted(reental_tokens, key=lambda x: x["balance"], reverse=True)
 
 
-def build_wallet_section(wallet_name, tokens, wallet_addr):
+def build_wallet_section(wallet_name, tokens, wallet_addr, reserved={}):
     polygonscan_url = f"https://polygonscan.com/address/{wallet_addr}#tokentxns"
     subtotal = sum(t["balance"] for t in tokens)
     if not tokens:
@@ -82,17 +112,26 @@ def build_wallet_section(wallet_name, tokens, wallet_addr):
     else:
         rows = ""
         for t in tokens:
+            key = symbol_to_key(t["token_symbol"])
+            res = reserved.get(key, 0.0)
+            disp = t["balance"] - res
+            res_str  = f"{res:.4f}"  if res  > 0 else "—"
+            disp_str = f"{disp:.4f}" if disp > 0 else "—"
+            disp_color = "#16a34a" if disp > 0 else "#dc2626"
             rows += (
                 "<tr>"
                 f"<td style='padding:9px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:11px;color:#777;'>{t['token_address']}</td>"
                 f"<td style='padding:9px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;color:#1F2937;'>{t['token_name']}</td>"
                 f"<td style='padding:9px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1F2937;'>{t['balance']:.4f}</td>"
+                f"<td style='padding:9px 12px;border-bottom:1px solid #f0f0f0;text-align:right;color:#FCA311;font-weight:500;'>{res_str}</td>"
+                f"<td style='padding:9px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:{disp_color};'>{disp_str}</td>"
                 "</tr>"
             )
         rows += (
             "<tr style='background:#fff8ee;'>"
             "<td colspan='2' style='padding:11px 12px;font-weight:600;color:#b47300;font-size:12px;'>SUBTOTAL WALLET</td>"
             f"<td style='padding:11px 12px;text-align:right;font-weight:700;color:#FCA311;font-size:15px;'>{subtotal:.4f}</td>"
+            "<td></td><td></td>"
             "</tr>"
         )
     section = (
@@ -116,13 +155,13 @@ def build_wallet_section(wallet_name, tokens, wallet_addr):
     return section, subtotal
 
 
-def build_email_html(report):
+def build_email_html(report):  # noqa
     fecha = report["fecha"]
     secciones_html = ""
     gran_total = 0.0
     for wallet_name, tokens in report["wallets"].items():
         wallet_addr = report["addresses"][wallet_name]
-        seccion, subtotal = build_wallet_section(wallet_name, tokens, wallet_addr)
+        seccion, subtotal = build_wallet_section(wallet_name, tokens, wallet_addr, report.get("reserved", {}))
         secciones_html += seccion
         gran_total += subtotal
     header = (
@@ -203,6 +242,9 @@ def main():
         tokens = get_reental_tokens(wallet_address)
         report["wallets"][wallet_name] = tokens
         report["addresses"][wallet_name] = wallet_address
+    reserved = get_reserved_tokens()
+    print(f"  Tokens reservados en sheet: {len(reserved)}")
+    report["reserved"] = reserved
     subject = f"Reental · Reporte diario {fecha}"
     send_email(subject, build_email_html(report), build_email_text(report))
     print("Proceso completado.")
