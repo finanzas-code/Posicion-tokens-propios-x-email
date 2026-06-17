@@ -21,6 +21,7 @@ LOGO_SVG = '<svg width="52" height="52" viewBox="0 0 275 275" fill="none" xmlns=
 
 
 def get_reental_tokens(wallet_address):
+    # Paso 1: obtener lista de contratos Reental via historial de transacciones
     params = {
         "chainid":    "137",
         "module":     "account",
@@ -37,27 +38,45 @@ def get_reental_tokens(wallet_address):
     if data["status"] != "1":
         print(f"  ! Sin transacciones: {data.get('message')}")
         return []
-    balances = {}
-    wallet_lower = wallet_address.lower()
+
+    # Identificar contratos Reental unicos
+    contratos = {}
     for tx in data["result"]:
-        contract = tx["contractAddress"].lower()
-        decimals = int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18
-        value = int(tx["value"]) / (10 ** decimals)
-        if contract not in balances:
-            balances[contract] = {
-                "token_address": tx["contractAddress"],
-                "token_name":    tx["tokenName"],
-                "token_symbol":  tx["tokenSymbol"],
-                "balance":       0.0,
-            }
-        if tx["to"].lower() == wallet_lower:
-            balances[contract]["balance"] += value
-        elif tx["from"].lower() == wallet_lower:
-            balances[contract]["balance"] -= value
-    reental_tokens = [
-        t for t in balances.values()
-        if t["balance"] > 0 and "reental" in t["token_symbol"].lower()
-    ]
+        if "reental" in tx["tokenSymbol"].lower():
+            contract = tx["contractAddress"].lower()
+            if contract not in contratos:
+                contratos[contract] = {
+                    "token_address": tx["contractAddress"],
+                    "token_name":    tx["tokenName"],
+                    "token_symbol":  tx["tokenSymbol"],
+                    "decimals":      int(tx["tokenDecimal"]) if tx["tokenDecimal"] else 18,
+                }
+
+    # Paso 2: consultar balance real on-chain para cada contrato
+    reental_tokens = []
+    for contract_lower, info in contratos.items():
+        bal_params = {
+            "chainid":         "137",
+            "module":          "account",
+            "action":          "tokenbalance",
+            "contractaddress": info["token_address"],
+            "address":         wallet_address,
+            "tag":             "latest",
+            "apikey":          ETHERSCAN_API_KEY,
+        }
+        bal_resp = requests.get(API_BASE, params=bal_params, timeout=30)
+        bal_resp.raise_for_status()
+        bal_data = bal_resp.json()
+        if bal_data["status"] == "1":
+            balance = int(bal_data["result"]) / (10 ** info["decimals"])
+            if balance > 0:
+                reental_tokens.append({
+                    "token_address": info["token_address"],
+                    "token_name":    info["token_name"],
+                    "token_symbol":  info["token_symbol"],
+                    "balance":       balance,
+                })
+
     print(f"  Tokens Reental encontrados: {len(reental_tokens)}")
     for t in reental_tokens:
         print(f"    · {t['token_name']} ({t['token_symbol']}) — {t['balance']:.4f}")
