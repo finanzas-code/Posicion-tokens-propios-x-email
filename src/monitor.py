@@ -1,4 +1,6 @@
 import os
+import csv
+import io
 import smtplib
 import requests
 import json
@@ -17,16 +19,11 @@ WALLETS = {
     "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],
 }
 
-# Sheet OTC con reservas activas (celda A1, pestaña Reservas, formato JSON)
 OTC_SHEET_ID  = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
 OTC_SHEET_TAB = "Reservas"
 
 
 def get_reserved_tokens():
-    """
-    Lee reservas activas del Google Sheet OTC.
-    Devuelve {token_address_lower: n_tokens_reservados}.
-    """
     url = (
         f"https://docs.google.com/spreadsheets/d/{OTC_SHEET_ID}/gviz/tq"
         f"?tqx=out:csv&sheet={OTC_SHEET_TAB}"
@@ -34,18 +31,15 @@ def get_reserved_tokens():
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
 
-    # La celda A1 contiene el JSON completo como string
-    # El CSV tiene solo una celda con el JSON
-    import csv, io
-reader = csv.reader(io.StringIO(resp.text))
-rows = list(reader)
-raw = rows[0][0] if rows else ""
+    reader = csv.reader(io.StringIO(resp.text))
+    rows = list(reader)
+    raw = rows[0][0] if rows else ""
 
-    print(f"  RAW sheet (primeros 200 chars): {raw[:200]}")
     try:
         reservas = json.loads(raw)
-    except json.JSONDecodeError:
-        print("  ! No se pudo parsear JSON de reservas")
+    except json.JSONDecodeError as e:
+        print(f"  ! No se pudo parsear JSON de reservas: {e}")
+        print(f"  RAW (primeros 200 chars): {raw[:200]}")
         return {}
 
     reserved = {}
@@ -58,6 +52,8 @@ raw = rows[0][0] if rows else ""
             reserved[addr] = reserved.get(addr, 0.0) + tokens
 
     print(f"  Reservas activas leidas: {len(reserved)} tokens con reserva")
+    for addr, n in reserved.items():
+        print(f"    · {addr[:20]}... — {n:.4f} reservados")
     return reserved
 
 
@@ -101,8 +97,8 @@ def build_wallet_section(wallet_name, tokens, wallet_addr, reserved):
         for t in tokens:
             res        = reserved.get(t["token_address"], 0.0)
             disp       = t["balance"] - res
-            res_str    = f"{res:.4f}"  if res  > 0 else "—"
-            disp_str   = f"{disp:.4f}" if disp > 0 else f"{disp:.4f}"
+            res_str    = f"{res:.4f}" if res > 0 else "—"
+            disp_str   = f"{disp:.4f}"
             disp_color = "#16a34a" if disp > 0 else "#dc2626"
             rows += (
                 "<tr>"
