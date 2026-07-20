@@ -1,6 +1,7 @@
 import os
 import smtplib
 import requests
+import json
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -16,34 +17,44 @@ WALLETS = {
     "Wallet Secundaria": os.environ["WALLET_ADDRESS_2"],
 }
 
-SHEET_ID  = "1E5h0h8bFfLNX-I-XNvm3-NIoYc7S6fnndSn2uv3uwq0"
-SHEET_GID = "1247043615"
+# Sheet OTC con reservas activas (celda A1, pestaña Reservas, formato JSON)
+OTC_SHEET_ID  = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
+OTC_SHEET_TAB = "Reservas"
 
 
 def get_reserved_tokens():
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={SHEET_GID}"
+    """
+    Lee reservas activas del Google Sheet OTC.
+    Devuelve {token_address_lower: n_tokens_reservados}.
+    """
+    url = (
+        f"https://docs.google.com/spreadsheets/d/{OTC_SHEET_ID}/gviz/tq"
+        f"?tqx=out:csv&sheet={OTC_SHEET_TAB}"
+    )
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
+
+    # La celda A1 contiene el JSON completo como string
+    # El CSV tiene solo una celda con el JSON
+    raw = resp.text.strip().strip('"').replace('""', '"')
+
+    try:
+        reservas = json.loads(raw)
+    except json.JSONDecodeError:
+        print("  ! No se pudo parsear JSON de reservas")
+        return {}
+
     reserved = {}
-    lines = resp.text.strip().split("\n")
-    for line in lines[1:]:
-        cols = line.split(",")
-        if len(cols) >= 3:
-            symbol  = cols[0].strip().strip('"').upper()
-            raw_val = cols[2].strip().strip('"').replace(",", ".")
-            try:
-                amount = float(raw_val) if raw_val else 0.0
-            except ValueError:
-                amount = 0.0
-            if symbol:
-                reserved[symbol] = amount
-    print(f"  Sheet leido: {len(reserved)} entradas")
+    for r in reservas:
+        if r.get("estado") in ("completada", "cancelada"):
+            continue
+        addr   = r.get("token_address", "").lower()
+        tokens = float(r.get("n_tokens", 0))
+        if addr:
+            reserved[addr] = reserved.get(addr, 0.0) + tokens
+
+    print(f"  Reservas activas leidas: {len(reserved)} tokens con reserva")
     return reserved
-
-
-def symbol_to_key(full_symbol):
-    parts = full_symbol.split("-", 1)
-    return parts[1].upper() if len(parts) > 1 else full_symbol.upper()
 
 
 def get_reental_tokens(wallet_address):
@@ -63,7 +74,7 @@ def get_reental_tokens(wallet_address):
         balance  = int(t.get("balance", 0)) / (10 ** decimals)
         if balance > 0:
             reental_tokens.append({
-                "token_address": t.get("token_address", ""),
+                "token_address": t.get("token_address", "").lower(),
                 "token_name":    t.get("name", symbol),
                 "token_symbol":  symbol,
                 "balance":       balance,
@@ -84,11 +95,10 @@ def build_wallet_section(wallet_name, tokens, wallet_addr, reserved):
     else:
         rows = ""
         for t in tokens:
-            key        = symbol_to_key(t["token_symbol"])
-            res        = reserved.get(key, 0.0)
+            res        = reserved.get(t["token_address"], 0.0)
             disp       = t["balance"] - res
             res_str    = f"{res:.4f}"  if res  > 0 else "—"
-            disp_str   = f"{disp:.4f}" if disp > 0 else "—"
+            disp_str   = f"{disp:.4f}" if disp > 0 else f"{disp:.4f}"
             disp_color = "#16a34a" if disp > 0 else "#dc2626"
             rows += (
                 "<tr>"
@@ -186,8 +196,7 @@ def build_email_text(report):
             lines.append(f"  {'Nombre':<32} {'Cantidad':>10} {'Reservados':>12} {'Disponibles':>12}")
             lines.append("  " + "-" * 68)
             for t in tokens:
-                key  = symbol_to_key(t["token_symbol"])
-                res  = reserved.get(key, 0.0)
+                res  = reserved.get(t["token_address"], 0.0)
                 disp = t["balance"] - res
                 lines.append(f"  {t['token_name']:<32} {t['balance']:>10.4f} {res:>12.4f} {disp:>12.4f}")
             subtotal = sum(t["balance"] for t in tokens)
