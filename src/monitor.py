@@ -36,7 +36,10 @@ def get_reserved_tokens():
 
     # La celda A1 contiene el JSON completo como string
     # El CSV tiene solo una celda con el JSON
-    raw = resp.text.strip().strip('"').replace('""', '"')
+    import csv, io
+reader = csv.reader(io.StringIO(resp.text))
+rows = list(reader)
+raw = rows[0][0] if rows else ""
 
     print(f"  RAW sheet (primeros 200 chars): {raw[:200]}")
     try:
