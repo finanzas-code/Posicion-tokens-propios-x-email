@@ -38,6 +38,7 @@ def get_reserved_tokens():
     # El CSV tiene solo una celda con el JSON
     raw = resp.text.strip().strip('"').replace('""', '"')
 
+    print(f"  RAW sheet (primeros 200 chars): {raw[:200]}")
     try:
         reservas = json.loads(raw)
     except json.JSONDecodeError:
