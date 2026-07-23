@@ -13,6 +13,7 @@ MORALIS_API_KEY   = os.environ["MORALIS_API_KEY"]
 SMTP_PASSWORD     = os.environ["BREVO_SMTP_KEY"]
 EMAIL_FROM        = os.environ["EMAIL_FROM"]
 EMAIL_TO          = os.environ["EMAIL_TO"]
+GOOGLE_API_KEY    = os.environ["GOOGLE_API_KEY"]
 
 WALLETS = {
     "Wallet Principal": os.environ["WALLET_ADDRESS_1"],
@@ -24,24 +25,25 @@ OTC_SHEET_TAB = "Reservas"
 
 def get_reserved_tokens():
     url = (
-        f"https://docs.google.com/spreadsheets/d/{OTC_SHEET_ID}/gviz/tq"
-        f"?tqx=out:json&sheet={OTC_SHEET_TAB}&range=A1"
+        f"https://sheets.googleapis.com/v4/spreadsheets/{OTC_SHEET_ID}"
+        f"/values/{OTC_SHEET_TAB}!A1?key={GOOGLE_API_KEY}"
     )
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
 
-    # El endpoint json devuelve javascript, hay que extraer el JSON puro
-    raw = resp.text
-    start = raw.index("(") + 1
-    end   = raw.rindex(")")
-    data  = json.loads(raw[start:end])
+    data = resp.json()
+    values = data.get("values", [])
+    if not values or not values[0]:
+        print("  ! Sheet vacio o sin datos en A1")
+        return {}
 
-    cell_value = data["table"]["rows"][0]["c"][0]["v"]
+    raw = values[0][0]
 
     try:
-        reservas = json.loads(cell_value)
+        reservas = json.loads(raw)
     except json.JSONDecodeError as e:
         print(f"  ! No se pudo parsear JSON de reservas: {e}")
+        print(f"  RAW (primeros 200 chars): {raw[:200]}")
         return {}
 
     reserved = {}
@@ -54,6 +56,8 @@ def get_reserved_tokens():
             reserved[addr] = reserved.get(addr, 0.0) + tokens
 
     print(f"  Reservas activas leidas: {len(reserved)} tokens con reserva")
+    for addr, n in reserved.items():
+        print(f"    · {addr[:20]}... — {n:.4f} reservados")
     return reserved
 
 
@@ -112,14 +116,13 @@ def build_wallet_section(wallet_name, tokens, wallet_addr, reserved):
                 f"<td style='padding:9px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:{disp_color};'>{disp_str}</td>"
                 "</tr>"
             )
-        # Fila de totales por columna
-        disp_total_color = "#16a34a" if total_disponible > 0 else "#dc2626"
+        disp_total_color = "#a3e635" if total_disponible > 0 else "#f87171"
         rows += (
             "<tr style='background:#1F2937;'>"
             "<td colspan='2' style='padding:11px 10px;font-weight:700;color:#fff;font-size:12px;'>TOTAL</td>"
             f"<td style='padding:11px 10px;text-align:right;font-weight:700;color:#fff;font-size:13px;'>{total_cantidad:.4f}</td>"
             f"<td style='padding:11px 10px;text-align:right;font-weight:700;color:#FCA311;font-size:13px;'>{total_reservados:.4f}</td>"
-            f"<td style='padding:11px 10px;text-align:right;font-weight:700;color:#{'a3e635' if total_disponible > 0 else 'f87171'};font-size:13px;'>{total_disponible:.4f}</td>"
+            f"<td style='padding:11px 10px;text-align:right;font-weight:700;color:{disp_total_color};font-size:13px;'>{total_disponible:.4f}</td>"
             "</tr>"
         )
 
@@ -162,7 +165,7 @@ def build_email_html(report):
         gran_reservados += tr
         gran_disponible += td
 
-    # Resumen ecuación arriba
+    disp_color = "#16a34a" if gran_disponible >= 0 else "#dc2626"
     resumen_html = (
         "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"
         "padding:16px 20px;margin-bottom:24px;'>"
@@ -181,7 +184,7 @@ def build_email_html(report):
         "<td style='text-align:center;color:#94a3b8;font-size:20px;font-weight:300;'>=</td>"
         "<td style='text-align:center;padding:0 8px;'>"
         "<div style='font-size:10px;color:#888;margin-bottom:4px;'>Disponibles</div>"
-        f"<div style='font-size:22px;font-weight:800;color:{'#16a34a' if gran_disponible >= 0 else '#dc2626'};'>{gran_disponible:.2f}</div>"
+        f"<div style='font-size:22px;font-weight:800;color:{disp_color};'>{gran_disponible:.2f}</div>"
         "</td>"
         "</tr></table>"
         "</div>"
@@ -246,7 +249,6 @@ def build_email_text(report):
             lines.append(f"  {'TOTAL':<32} {tc:>10.4f} {tr:>12.4f} {td:>12.4f}")
 
     lines.append("\n" + "=" * 70)
-    lines.append(f"  {'RESUMEN':}")
     lines.append(f"  Tokens en custodia : {gran_cantidad:.4f}")
     lines.append(f"  Reservados         : {gran_reservados:.4f}")
     lines.append(f"  Disponibles        : {gran_disponible:.4f}")
