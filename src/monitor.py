@@ -19,11 +19,10 @@ WALLETS = {
     "Wallet Principal": os.environ["WALLET_ADDRESS_1"],
 }
 
-OTC_SHEET_ID  = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
-OTC_SHEET_TAB = "ReservasMonitor"
+OTC_SHEET_ID = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
+
 
 def get_reserved_tokens():
-    # Leer ReservasMonitor: filas con token_address en col A, n_tokens en col B
     url = (
         f"https://sheets.googleapis.com/v4/spreadsheets/{OTC_SHEET_ID}"
         f"/values/ReservasMonitor!A:B?key={GOOGLE_API_KEY}"
@@ -42,7 +41,7 @@ def get_reserved_tokens():
     for row in values[1:]:  # saltar cabecera
         if len(row) < 2:
             continue
-        addr   = row[0].strip().lower()
+        addr = row[0].strip().lower()
         try:
             tokens = float(str(row[1]).replace(",", "."))
         except ValueError:
@@ -54,7 +53,6 @@ def get_reserved_tokens():
     for addr, n in reserved.items():
         print(f"    · {addr[:20]}... — {n:.4f} reservados")
     return reserved
-
 
 
 def get_reental_tokens(wallet_address):
