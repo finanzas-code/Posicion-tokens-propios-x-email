@@ -20,7 +20,7 @@ WALLETS = {
 }
 
 OTC_SHEET_ID  = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
-OTC_SHEET_TAB = "Reservas"
+OTC_SHEET_TAB = "ReservasMonitor"
 
 def get_reserved_tokens():
     # Leer ReservasMonitor: filas con token_address en col A, n_tokens en col B
