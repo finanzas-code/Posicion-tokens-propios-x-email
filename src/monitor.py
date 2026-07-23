@@ -22,43 +22,39 @@ WALLETS = {
 OTC_SHEET_ID  = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
 OTC_SHEET_TAB = "Reservas"
 
-
 def get_reserved_tokens():
+    # Leer ReservasMonitor: filas con token_address en col A, n_tokens en col B
     url = (
         f"https://sheets.googleapis.com/v4/spreadsheets/{OTC_SHEET_ID}"
-        f"/values/{OTC_SHEET_TAB}!A1?key={GOOGLE_API_KEY}"
+        f"/values/ReservasMonitor!A:B?key={GOOGLE_API_KEY}"
     )
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
 
-    data = resp.json()
+    data   = resp.json()
     values = data.get("values", [])
-    if not values or not values[0]:
-        print("  ! Sheet vacio o sin datos en A1")
-        return {}
 
-    raw = values[0][0]
-
-    try:
-        reservas = json.loads(raw)
-    except json.JSONDecodeError as e:
-        print(f"  ! No se pudo parsear JSON de reservas: {e}")
-        print(f"  RAW (primeros 200 chars): {raw[:200]}")
+    if not values:
+        print("  ! ReservasMonitor vacia")
         return {}
 
     reserved = {}
-    for r in reservas:
-        if r.get("estado") in ("completada", "cancelada"):
+    for row in values[1:]:  # saltar cabecera
+        if len(row) < 2:
             continue
-        addr   = r.get("token_address", "").lower()
-        tokens = float(r.get("n_tokens", 0))
+        addr   = row[0].strip().lower()
+        try:
+            tokens = float(str(row[1]).replace(",", "."))
+        except ValueError:
+            continue
         if addr:
             reserved[addr] = reserved.get(addr, 0.0) + tokens
 
-    print(f"  Reservas activas leidas: {len(reserved)} tokens con reserva")
+    print(f"  Reservas activas leidas: {len(reserved)} contratos con reserva")
     for addr, n in reserved.items():
         print(f"    · {addr[:20]}... — {n:.4f} reservados")
     return reserved
+
 
 
 def get_reental_tokens(wallet_address):
