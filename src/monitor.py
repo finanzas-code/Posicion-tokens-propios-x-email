@@ -25,17 +25,21 @@ OTC_SHEET_TAB = "Reservas"
 def get_reserved_tokens():
     url = (
         f"https://docs.google.com/spreadsheets/d/{OTC_SHEET_ID}/gviz/tq"
-        f"?tqx=out:csv&sheet={OTC_SHEET_TAB}"
+        f"?tqx=out:json&sheet={OTC_SHEET_TAB}&range=A1"
     )
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
 
-    reader = csv.reader(io.StringIO(resp.text))
-    rows = list(reader)
-    raw = rows[0][0] if rows else ""
+    # El endpoint json devuelve javascript, hay que extraer el JSON puro
+    raw = resp.text
+    start = raw.index("(") + 1
+    end   = raw.rindex(")")
+    data  = json.loads(raw[start:end])
+
+    cell_value = data["table"]["rows"][0]["c"][0]["v"]
 
     try:
-        reservas = json.loads(raw)
+        reservas = json.loads(cell_value)
     except json.JSONDecodeError as e:
         print(f"  ! No se pudo parsear JSON de reservas: {e}")
         return {}
