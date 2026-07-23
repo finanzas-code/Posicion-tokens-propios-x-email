@@ -33,4 +33,5 @@ jobs:
           WALLET_ADDRESS_1:    ${{ secrets.WALLET_ADDRESS_1 }}
           WALLET_ADDRESS_2:    ${{ secrets.WALLET_ADDRESS_2 }}
           MORALIS_API_KEY:     ${{ secrets.MORALIS_API_KEY }}
+          GOOGLE_API_KEY:      ${{ secrets.GOOGLE_API_KEY }}
         run: python src/monitor.py
