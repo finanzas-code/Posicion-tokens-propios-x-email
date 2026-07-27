@@ -24,26 +24,22 @@ OTC_SHEET_ID = "13Q0n7egbAIJSU9UvwwDucd3MUQ48Q44eoMwsPT-PmGs"
 
 def get_reserved_tokens():
     url = (
-        f"https://sheets.googleapis.com/v4/spreadsheets/{OTC_SHEET_ID}"
-        f"/values/ReservasMonitor!A:B?key={GOOGLE_API_KEY}"
+        f"https://docs.google.com/spreadsheets/d/{OTC_SHEET_ID}"
+        f"/gviz/tq?tqx=out:csv&sheet=ReservasMonitor"
     )
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
 
-    data   = resp.json()
-    values = data.get("values", [])
-
-    if not values:
-        print("  ! ReservasMonitor vacia")
-        return {}
+    reader = csv.reader(io.StringIO(resp.text))
+    rows = list(reader)
 
     reserved = {}
-    for row in values[1:]:  # saltar cabecera
+    for row in rows[1:]:  # saltar cabecera
         if len(row) < 2:
             continue
-        addr = row[0].strip().lower()
+        addr = row[0].strip().strip('"').lower()
         try:
-            tokens = float(str(row[1]).replace(",", "."))
+            tokens = float(row[1].strip().strip('"').replace(",", "."))
         except ValueError:
             continue
         if addr:
