@@ -2,14 +2,18 @@ name: Keep Alive
 
 on:
   schedule:
-    - cron: "0 8 1 * *"  # Primer día de cada mes a las 08:00 UTC
+    - cron: "0 8 1 * *"
   workflow_dispatch:
 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Keep alive
         run: |
           git config user.email "github-actions@github.com"
